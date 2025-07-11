@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مواقيت الصلاة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%);
+            min-height: 100vh;
+        }
+        
+        .prayer-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .prayer-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .active-prayer {
+            border: 3px solid #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+        }
+        
+        .countdown {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .location-input {
+            transition: all 0.3s ease;
+        }
+        
+        .location-input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        
+        @media (max-width: 640px) {
+            .prayer-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            
+            .countdown {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2">مواقيت الصلاة</h1>
+            <p class="text-xl opacity-90">جدول صلواتك اليومية</p>
+            
+            <div class="mt-6 flex justify-center items-center">
+                <div class="relative w-full max-w-md">
+                    <input 
+                        type="text" 
+                        id="locationInput" 
+                        placeholder="أدخل المدينة أو العنوان" 
+                        class="location-input w-full py-3 px-5 rounded-full bg-white bg-opacity-20 backdrop-blur-sm border border-gray-300 border-opacity-30 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <button id="searchBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex justify-center items-center space-x-4">
+                <button id="currentLocationBtn" class="flex items-center text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-full">
+                    <i class="fas fa-location-arrow mr-2"></i> استخدام الموقع الحالي
+                </button>
+                
+                <div class="relative">
+                    <select id="calculationMethod" class="appearance-none bg-blue-600 hover:bg-blue-700 text-white py-2 pl-4 pr-8 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="0">Islamic Society of North America</option>
+                        <option value="1">Muslim World League</option>
+                        <option value="2">Egyptian General Authority</option>
+                        <option value="3">Umm Al-Qura University</option>
+                        <option value="4">University of Islamic Sciences, Karachi</option>
+                        <option value="5">Institute of Geophysics, University of Tehran</option>
+                        <option value="7">Gulf Region</option>
+                        <option value="8">Kuwait</option>
+                        <option value="9">Qatar</option>
+                        <option value="10">Majlis Ugama Islam Singapura</option>
+                        <option value="11">Union Organization Islamic de France</option>
+                        <option value="12">Diyanet İşleri Başkanlığı</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Current Time and Location -->
+        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 mb-8 shadow-lg">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-center md:text-left mb-4 md:mb-0">
+                    <h2 class="text-2xl font-bold" id="currentLocation">Loading location...</h2>
+                    <p class="text-lg opacity-90" id="currentDate">-- -- ----</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-5xl font-bold" id="currentTime">--:-- --</div>
+                    <div class="text-sm opacity-80 mt-1" id="hijriDate">-- ---- ---- AH</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Next Prayer Countdown -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 mb-8 shadow-lg">
+            <div class="text-center">
+                <h3 class="text-xl font-semibold mb-2">الصلاة القادمة</h3>
+                <div class="countdown mb-2" id="nextPrayerName">--</div>
+                <div class="text-3xl font-bold mb-2" id="nextPrayerTime">--:-- --</div>
+                <div class="text-xl" id="countdown">--h --m --s</div>
+            </div>
+        </div>
+        
+        <!-- Prayer Times Grid -->
+        <div class="grid prayer-grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+            <!-- Fajr -->
+            <div class="prayer-card bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 text-center" id="fajrCard">
+                <div class="text-2xl mb-2"><i class="fas fa-sun text-yellow-300"></i></div>
+                <h3 class="text-xl font-semibold mb-1">الفجر</h3>
+                <div class="text-2xl font-bold" id="fajrTime">--:--</div>
+                <div class="text-sm opacity-80 mt-1" id="fajrIqama">الإقامة: --:--</div>
+            </div>
+            
+            <!-- Sunrise -->
+            <div class="prayer-card bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 text-center">
+                <div class="text-2xl mb-2"><i class="fas fa-sunrise text-orange-400"></i></div>
+                <h3 class="text-xl font-semibold mb-1">الشروق</h3>
+                <div class="text-2xl font-bold" id="sunriseTime">--:--</div>
+            </div>
+            
+            <!-- Dhuhr -->
+            <div class="prayer-card bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 text-center" id="dhuhrCard">
+                <div class="text-2xl mb-2"><i class="fas fa-sun text-yellow-500"></i></div>
+                <h3 class="text-xl font-semibold mb-1">الظهر</h3>
+                <div class="text-2xl font-bold" id="dhuhrTime">--:--</div>
+                <div class="text-sm opacity-80 mt-1" id="dhuhrIqama">الإقامة: --:--</div>
+                <div class="hidden mt-2 text-xs bg-yellow-600 text-white px-2 py-1 rounded-full" id="jumuahTag">Jumu'ah</div>
+            </div>
+            
+            <!-- Asr -->
+            <div class="prayer-card bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 text-center" id="asrCard">
+                <div class="text-2xl mb-2"><i class="fas fa-cloud-sun text-orange-500"></i></div>
+                <h3 class="text-xl font-semibold mb-1">العصر</h3>
+                <div class="text-2xl font-bold" id="asrTime">--:--</div>
+                <div class="text-sm opacity-80 mt-1" id="asrIqama">الإقامة: --:--</div>
+            </div>
+            
+            <!-- Maghrib -->
+            <div class="prayer-card bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 text-center" id="maghribCard">
+                <div class="text-2xl mb-2"><i class="fas fa-sun text-red-500"></i></div>
+                <h3 class="text-xl font-semibold mb-1">المغرب</h3>
+                <div class="text-2xl font-bold" id="maghribTime">--:--</div>
+                <div class="text-sm opacity-80 mt-1" id="maghribIqama">الإقامة: --:--</div>
+            </div>
+            
+            <!-- Isha -->
+            <div class="prayer-card bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 text-center" id="ishaCard">
+                <div class="text-2xl mb-2"><i class="fas fa-moon text-indigo-300"></i></div>
+                <h3 class="text-xl font-semibold mb-1">العشاء</h3>
+                <div class="text-2xl font-bold" id="ishaTime">--:--</div>
+                <div class="text-sm opacity-80 mt-1" id="ishaIqama">Iqama: --:--</div>
+            </div>
+        </div>
+        
+        <!-- Additional Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 shadow-lg">
+                <h3 class="text-xl font-semibold mb-3">اتجاه القبلة اليوم</h3>
+                <div class="flex items-center justify-center">
+                    <div class="relative w-40 h-40">
+                        <div class="absolute inset-0 rounded-full bg-blue-900 bg-opacity-30 flex items-center justify-center">
+                            <div class="w-32 h-32 rounded-full bg-blue-800 bg-opacity-50 flex items-center justify-center">
+                                <div class="w-24 h-24 rounded-full bg-blue-700 bg-opacity-70 flex items-center justify-center">
+                                    <div id="qiblaArrow" class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center transform rotate-0 transition-transform duration-500">
+                                        <div class="w-2 h-8 bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute top-0 left-1/2 transform -translate-x-1/2 text-center">
+                            <span class="text-xs">الشمال</span>
+                        </div>
+                        <div class="absolute right-0 top-1/2 transform -translate-y-1/2 text-center">
+                            <span class="text-xs">الشرق</span>
+                        </div>
+                        <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center">
+                            <span class="text-xs">الجنوب</span>
+                        </div>
+                        <div class="absolute left-0 top-1/2 transform -translate-y-1/2 text-center">
+                            <span class="text-xs">الغرب</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-center mt-4" id="qiblaDirection">حساب اتجاه القبلة...</p>
+            </div>
+            
+            <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-5 shadow-lg">
+                <h3 class="text-xl font-semibold mb-3">أحداث إسلامية اليوم</h3>
+                <ul class="space-y-2" id="islamicEvents">
+                    <li class="flex items-center">
+                        <i class="fas fa-circle text-xs mr-2 text-blue-400"></i>
+                        <span>جاري تحميل الأحداث...</span>
+                    </li>
+                </ul>
+                
+                <div class="mt-6">
+                    <h4 class="font-semibold mb-2">عد تنازلي لرمضان</h4>
+                    <div class="bg-blue-900 bg-opacity-30 rounded-lg p-3">
+                        <div class="flex justify-between items-center mb-1">
+                            <span>أيام متبقية لرمضان:</span>
+                            <span class="font-bold" id="ramadanCountdown">--</span>
+                        </div>
+                        <div class="w-full bg-gray-300 rounded-full h-2.5">
+                            <div id="ramadanProgress" class="bg-yellow-400 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-sm opacity-80">
+            <p>© <span id="currentYear"></span> تطبيق مواقيت الصلاة - تقبل الله طاعاتكم</p>
+            <p class="mt-1">البيانات مقدمة من <a href="https://aladhan.com/prayer-times-api" target="_blank" class="text-blue-300 hover:underline">AlAdhan API</a></p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current year in footer
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            
+            // Update current time every second
+            function updateCurrentTime() {
+                const now = new Date();
+                const options = { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: true 
+                };
+                document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', options);
+                
+                const dateOptions = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', dateOptions);
+                
+                // Update Hijri date (simplified - in a real app you'd use a proper Hijri date library)
+                if(now.getDay() === 5) { // Friday
+                    document.getElementById('jumuahTag').classList.remove('hidden');
+                } else {
+                    document.getElementById('jumuahTag').classList.add('hidden');
+                }
+            }
+            
+            setInterval(updateCurrentTime, 1000);
+            updateCurrentTime();
+            
+            // Mock data for demo purposes
+            function loadMockData() {
+                const now = new Date();
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                // Mock prayer times
+                document.getElementById('currentLocation').textContent = 'New York, NY, USA';
+                document.getElementById('hijriDate').textContent = '15 Shawwal 1444 AH';
+                
+                // Set prayer times (mock data)
+                document.getElementById('fajrTime').textContent = '5:15 AM';
+                document.getElementById('sunriseTime').textContent = '6:30 AM';
+                document.getElementById('dhuhrTime').textContent = '12:45 PM';
+                document.getElementById('asrTime').textContent = '4:15 PM';
+                document.getElementById('maghribTime').textContent = '7:30 PM';
+                document.getElementById('ishaTime').textContent = '9:00 PM';
+                
+                // Set iqama times (mock data)
+                document.getElementById('fajrIqama').textContent = 'Iqama: 5:30 AM';
+                document.getElementById('dhuhrIqama').textContent = 'Iqama: 1:15 PM';
+                document.getElementById('asrIqama').textContent = 'Iqama: 4:30 PM';
+                document.getElementById('maghribIqama').textContent = 'Iqama: 7:35 PM';
+                document.getElementById('ishaIqama').textContent = 'Iqama: 9:15 PM';
+                
+                // Set next prayer (mock logic)
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                
+                let nextPrayer = '';
+                let nextPrayerTime = '';
+                let countdownText = '';
+                
+                if(hours < 5 || (hours === 5 && minutes < 15)) {
+                    nextPrayer = 'Fajr';
+                    nextPrayerTime = '5:15 AM';
+                    countdownText = 'Time until Fajr';
+                } else if(hours < 12 || (hours === 12 && minutes < 45)) {
+                    nextPrayer = 'Dhuhr';
+                    nextPrayerTime = '12:45 PM';
+                    countdownText = 'Time until Dhuhr';
+                } else if(hours < 16 || (hours === 16 && minutes < 15)) {
+                    nextPrayer = 'Asr';
+                    nextPrayerTime = '4:15 PM';
+                    countdownText = 'Time until Asr';
+                } else if(hours < 19 || (hours === 19 && minutes < 30)) {
+                    nextPrayer = 'Maghrib';
+                    nextPrayerTime = '7:30 PM';
+                    countdownText = 'Time until Maghrib';
+                } else if(hours < 21 || (hours === 21 && minutes < 0)) {
+                    nextPrayer = 'Isha';
+                    nextPrayerTime = '9:00 PM';
+                    countdownText = 'Time until Isha';
+                } else {
+                    nextPrayer = 'Fajr';
+                    nextPrayerTime = '5:15 AM';
+                    countdownText = 'Time until tomorrow\'s Fajr';
+                }
+                
+                document.getElementById('nextPrayerName').textContent = nextPrayer;
+                document.getElementById('nextPrayerTime').textContent = nextPrayerTime;
+                
+                // Highlight current prayer card
+                document.querySelectorAll('.prayer-card').forEach(card => {
+                    card.classList.remove('active-prayer');
+                });
+                
+                if(nextPrayer === 'Fajr') {
+                    document.getElementById('fajrCard').classList.add('active-prayer');
+                } else if(nextPrayer === 'Dhuhr') {
+                    document.getElementById('dhuhrCard').classList.add('active-prayer');
+                } else if(nextPrayer === 'Asr') {
+                    document.getElementById('asrCard').classList.add('active-prayer');
+                } else if(nextPrayer === 'Maghrib') {
+                    document.getElementById('maghribCard').classList.add('active-prayer');
+                } else if(nextPrayer === 'Isha') {
+                    document.getElementById('ishaCard').classList.add('active-prayer');
+                }
+                
+                // Mock countdown timer
+                updateCountdown();
+                
+                // Mock qibla direction
+                document.getElementById('qiblaDirection').textContent = 'Qibla direction: 58° Northeast';
+                document.getElementById('qiblaArrow').style.transform = 'rotate(58deg)';
+                
+                // Mock Islamic events
+                const eventsList = document.getElementById('islamicEvents');
+                eventsList.innerHTML = '';
+                
+                const events = [
+                    'First day of Shawwal',
+                    'Eid al-Fitr (estimated)',
+                    'Day of Arafah in 23 days'
+                ];
+                
+                events.forEach(event => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center';
+                    li.innerHTML = `<i class="fas fa-circle text-xs mr-2 text-blue-400"></i><span>${event}</span>`;
+                    eventsList.appendChild(li);
+                });
+                
+                // Mock Ramadan countdown
+                document.getElementById('ramadanCountdown').textContent = '23 days';
+                document.getElementById('ramadanProgress').style.width = '15%';
+            }
+            
+            function updateCountdown() {
+                const now = new Date();
+                let targetTime;
+                
+                // Mock target time (next Fajr at 5:15 AM)
+                targetTime = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate(),
+                    5, 15, 0
+                );
+                
+                // If it's already past 5:15 AM, set target to next day
+                if(now > targetTime) {
+                    targetTime.setDate(targetTime.getDate() + 1);
+                }
+                
+                const diff = targetTime - now;
+                
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdown').textContent = 
+                    `${hours}h ${minutes}m ${seconds}s`;
+            }
+            
+            setInterval(updateCountdown, 1000);
+            updateCountdown();
+            
+            // Load initial data
+            loadMockData();
+            
+            // Event listeners for buttons
+            document.getElementById('currentLocationBtn').addEventListener('click', function() {
+                if(navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            // In a real app, you would reverse geocode the coordinates
+                            document.getElementById('currentLocation').textContent = 'Current Location';
+                            loadMockData(); // For demo, just reload mock data
+                            
+                            // Show success message
+                            const originalText = this.textContent;
+                            this.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Location Found';
+                            setTimeout(() => {
+                                this.textContent = originalText;
+                            }, 2000);
+                        },
+                        function(error) {
+                            alert('Unable to retrieve your location. Please try again or enter manually.');
+                            console.error('Geolocation error:', error);
+                        }
+                    );
+                } else {
+                    alert('Geolocation is not supported by your browser. Please enter your location manually.');
+                }
+            });
+            
+            document.getElementById('searchBtn').addEventListener('click', function() {
+                const location = document.getElementById('locationInput').value.trim();
+                if(location) {
+                    document.getElementById('currentLocation').textContent = location;
+                    loadMockData(); // For demo, just reload mock data
+                }
+            });
+            
+            document.getElementById('locationInput').addEventListener('keypress', function(e) {
+                if(e.key === 'Enter') {
+                    document.getElementById('searchBtn').click();
+                }
+            });
+            
+            document.getElementById('calculationMethod').addEventListener('change', function() {
+                // In a real app, this would reload prayer times with the selected method
+                loadMockData();
+            });
+        });
+    </script>
+</body>
+</html>
